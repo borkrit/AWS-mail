@@ -1,18 +1,20 @@
 <?php
+// Разрешить кросс-доменные запросы от определенного домена
+header("Access-Control-Allow-Origin: https://bsm.byd.pl"); // Замените на домен вашего основного сайта
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Обработка предварительного запроса (OPTIONS)
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header('Content-Type: application/json');
-header("Access-Control-Allow-Origin: *"); // Разрешаем кросс-доменные запросы
-
-// Подключение PHPMailer
-require 'phpmailer/src/Exception.php';
-require 'phpmailer/src/PHPMailer.php';
-require 'phpmailer/src/SMTP.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 // Получение данных из формы
 $name = $_POST['name'];
@@ -26,32 +28,20 @@ if (empty($name) || empty($email) || empty($message) || $accept === 'No') {
     exit;
 }
 
-// Создание экземпляра PHPMailer
-$mail = new PHPMailer(true);
+// Формирование текста письма
+$body = "Имя: $name\n";
+$body .= "Email: $email\n";
+$body .= "Сообщение:\n$message\n";
+$body .= "Согласие на обработку данных: $accept";
 
-try {
-    // Настройки сервера
-    $mail->isSMTP();
-    $mail->Host = 'smtp.example.com'; // Укажите SMTP-сервер вашего провайдера
-    $mail->SMTPAuth = true;
-    $mail->Username = 'your_email@example.com'; // Ваш SMTP логин
-    $mail->Password = 'your_email_password'; // Ваш SMTP пароль
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = 587;
+// Заголовки письма
+$headers = "From: $email\r\n";
+$headers .= "Reply-To: $email\r\n";
 
-    // Получатели
-    $mail->setFrom($email, $name);
-    $mail->addAddress('pogoriliy15@gmail.com'); // Добавление получателя
-
-    // Содержание письма
-    $mail->isHTML(false);
-    $mail->Subject = 'Новое сообщение с формы';
-    $mail->Body    = "Имя: $name\nEmail: $email\nСообщение:\n$message\nСогласие на обработку данных: $accept";
-
-    // Отправка письма
-    $mail->send();
+// Попытка отправки письма
+if (mail("pogoriliy15@gmail.com", "Новое сообщение с формы", $body, $headers)) {
     echo json_encode(["status" => "success", "message" => "Сообщение успешно отправлено!"]);
-} catch (Exception $e) {
-    echo json_encode(["status" => "error", "message" => "Произошла ошибка при отправке сообщения: {$mail->ErrorInfo}"]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Произошла ошибка при отправке сообщения."]);
 }
 ?>
